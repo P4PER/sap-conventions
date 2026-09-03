@@ -1538,7 +1538,7 @@ function ui5Tests(root, webappDir) {
     for (const folder of new Set(files.filter((f) => f.includes("/")).map((f) => f.split("/")[0]))) {
         if (UI5_TEST_DIRS.has(folder)) continue;
         out.push(finding({
-            check: 13, id: "ui5-test-tree", severity: VIOLATION, file: at(folder).slice(0, -1),
+            check: 13, id: "ui5-test-tree", severity: VIOLATION, file: at(folder),
             message: `webapp/test/ holds only unit/ and integration/; found "${folder}"`,
         }));
     }

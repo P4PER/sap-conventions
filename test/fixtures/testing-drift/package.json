@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "ts-typecheck": "tsc --noEmit",
+    "generate:entry-point": "dev-cap-tools gen-entrypoint",
+    "start:hybrid": "cds watch --profile hybrid"
+  }
+}
