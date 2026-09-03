@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Zero runtime dependencies.** No npm packages in `dependencies` or `devDependencies`. Tests use the built-in `node --test` runner and `node:assert/strict`. YAML and JSON5 are parsed with targeted regex, never a library.
+- **Zero runtime dependencies.** Node 25 resolves `node --test <dir>` as a module path, so the suite runs via the explicit glob `node --test "test/**/*.test.mjs"` — `.mjs`-only, so the `.test.ts` files inside `test/fixtures/` are never executed. No npm packages in `dependencies` or `devDependencies`. Tests use the built-in `node --test` runner and `node:assert/strict`. YAML and JSON5 are parsed with targeted regex, never a library.
 - **The script never writes.** `audit.mjs` is read-only and always exits 0 unless it crashes. All mutation happens in the fix pass, driven by the skill.
 - **The plugin obeys its own rules.** Its own `.mjs` modules are kebab-case, ordered imports → types → constants → exports → helpers, and kept under 300 lines.
 - **Skill files delegate, never restate.** Any UI5 API-level guidance points at `ui5:ui5-best-practices` and its siblings. No SAP API rules are copied into this repo.
@@ -136,7 +136,7 @@ test("package.json has no dependencies", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd . && node --test test/`
+Run: `npm test`
 Expected: FAIL — `ENOENT` on `package.json` / `.claude-plugin/plugin.json`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -151,7 +151,7 @@ Expected: FAIL — `ENOENT` on `package.json` / `.claude-plugin/plugin.json`.
   "type": "module",
   "description": "Structural conventions checker for UI5 and CAP projects",
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test \"test/**/*.test.mjs\""
   }
 }
 ```

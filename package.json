@@ -1,0 +1,10 @@
+{
+  "name": "sap-conventions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Structural conventions checker for UI5 and CAP projects",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  }
+}
