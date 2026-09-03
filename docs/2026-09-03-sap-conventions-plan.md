@@ -41,7 +41,8 @@ sap-conventions/
     naming-ui5.md                      spec §4
     naming-cap.md                      spec §5 + §6
     typescript-layout.md               spec §7
-    approuter.md                       spec §8
+    testing.md                         spec §8
+    approuter.md                       spec §9
   skills/
     ui5-conventions/SKILL.md
     cap-conventions/SKILL.md
@@ -57,20 +58,31 @@ sap-conventions/
         external-services.mjs          checks 4, 9
         ts-layout.mjs                  checks 6, 7, 8
         deployment.mjs                 checks 10, 11
-  test/
+        testing.mjs                    checks 12, 13, 14
+  test/                                mirrors scripts/, per spec 8.1
     fixtures/                          synthetic repos, one dir per scenario
-    walk.test.mjs
-    ui5-naming.test.mjs
-    cap-naming.test.mjs
-    external-services.test.mjs
-    ts-layout.test.mjs
-    deployment.test.mjs
+    manifest.test.mjs                  repo-level, no scripts/ counterpart
+    references.test.mjs                repo-level
+    skills.test.mjs                    repo-level
     audit.test.mjs
+    lib/
+      walk.test.mjs
+      checks/
+        ui5-naming.test.mjs
+        cap-naming.test.mjs
+        external-services.test.mjs
+        ts-layout.test.mjs
+        deployment.test.mjs
+        testing.test.mjs
 ```
 
 One check module per spec section keeps each file well under the 300-line
 threshold the plugin itself enforces, and lets a reviewer reject one check
 without touching its neighbours.
+
+`test/` mirrors `scripts/` rather than sitting flat, because spec §8.1 is the
+rule this plugin enforces on everyone else. The three repo-level test files have
+no `scripts/` counterpart and stay at the root of `test/`.
 
 ---
 
@@ -201,7 +213,7 @@ git commit -m "feat: scaffold plugin manifests and test runner"
 - Create: `scripts/lib/finding.mjs`
 - Create: `scripts/lib/walk.mjs`
 - Create: `test/fixtures/full-repo/` (see Step 1)
-- Test: `test/walk.test.mjs`
+- Test: `test/lib/walk.test.mjs`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -238,16 +250,16 @@ echo '{}' > test/fixtures/full-repo/package.json
 
 - [ ] **Step 2: Write the failing test**
 
-`test/walk.test.mjs`:
+`test/lib/walk.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { detectHalves, listFiles } from "../scripts/lib/walk.mjs";
-import { PASCAL, CAMEL, KEBAB } from "../scripts/lib/finding.mjs";
+import { detectHalves, listFiles } from "../../scripts/lib/walk.mjs";
+import { PASCAL, CAMEL, KEBAB } from "../../scripts/lib/finding.mjs";
 
-const fixture = fileURLToPath(new URL("fixtures/full-repo", import.meta.url));
+const fixture = fileURLToPath(new URL("../fixtures/full-repo", import.meta.url));
 
 test("detectHalves finds every half of a full repo", () => {
     const halves = detectHalves(fixture);
@@ -283,8 +295,8 @@ test("casing regexes accept and reject the right names", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/walk.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/walk.mjs'`.
+Run: `node --test test/lib/walk.test.mjs`
+Expected: FAIL — `Cannot find module '../../scripts/lib/walk.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/finding.mjs`**
 
@@ -364,13 +376,13 @@ function findWebapps(root) {
 
 - [ ] **Step 6: Run test to verify it passes**
 
-Run: `node --test test/walk.test.mjs`
+Run: `node --test test/lib/walk.test.mjs`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add scripts/lib/finding.mjs scripts/lib/walk.mjs test/walk.test.mjs test/fixtures/full-repo
+git add scripts/lib/finding.mjs scripts/lib/walk.mjs test/lib/walk.test.mjs test/fixtures/full-repo
 git commit -m "feat: add finding vocabulary and repository walker"
 ```
 
@@ -381,7 +393,7 @@ git commit -m "feat: add finding vocabulary and repository walker"
 **Files:**
 - Create: `scripts/lib/checks/ui5-naming.mjs`
 - Create: `test/fixtures/ui5-drift/`
-- Test: `test/ui5-naming.test.mjs`
+- Test: `test/lib/checks/ui5-naming.test.mjs`
 
 **Interfaces:**
 - Consumes: `finding`, `rename`, `PASCAL`, `CAMEL`, `VIOLATION`, `QUESTION` from `finding.mjs`; `listFiles` from `walk.mjs`.
@@ -389,7 +401,7 @@ git commit -m "feat: add finding vocabulary and repository walker"
 
 **Rules implemented:**
 
-1. Folder names are the singular allowed set: `view controller fragment model util delegate service i18n css`. A plural or unknown folder is a `violation` with a rename fix when the singular form is known.
+1. Folder names are the singular allowed set: `view controller fragment model util delegate service i18n css test`. A plural or unknown folder is a `violation` with a rename fix when the singular form is known. `test/` is allowed here but its internal shape is Task 8's concern, not this module's.
 2. `controller/X.controller.ts` requires `view/X.view.xml`; `controller/X.ts` requires `fragment/X.fragment.xml`; a `controller/` module with neither partner is a `question`.
 3. `view/*.view.xml` and `fragment/*.fragment.xml` basenames are PascalCase.
 4. In `model util delegate service`, a `.ts` whose source matches `/^export default class\s/m` must be PascalCase; otherwise camelCase.
@@ -415,16 +427,16 @@ not match its fragment.
 
 - [ ] **Step 2: Write the failing test**
 
-`test/ui5-naming.test.mjs`:
+`test/lib/checks/ui5-naming.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { checkUi5Naming } from "../scripts/lib/checks/ui5-naming.mjs";
+import { checkUi5Naming } from "../../../scripts/lib/checks/ui5-naming.mjs";
 
-const drift = fileURLToPath(new URL("fixtures/ui5-drift", import.meta.url));
-const clean = fileURLToPath(new URL("fixtures/full-repo", import.meta.url));
+const drift = fileURLToPath(new URL("../../fixtures/ui5-drift", import.meta.url));
+const clean = fileURLToPath(new URL("../../fixtures/full-repo", import.meta.url));
 const byId = (fs, id) => fs.filter((f) => f.id === id);
 
 test("plural fragments folder is a violation with a rename fix", () => {
@@ -457,8 +469,8 @@ test("a conforming webapp produces no findings", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/ui5-naming.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/checks/ui5-naming.mjs'`.
+Run: `node --test test/lib/checks/ui5-naming.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/ui5-naming.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/checks/ui5-naming.mjs`**
 
@@ -469,7 +481,7 @@ import { listFiles } from "../walk.mjs";
 import { finding, rename, PASCAL, CAMEL, VIOLATION, QUESTION } from "../finding.mjs";
 
 const ALLOWED_FOLDERS = new Set([
-    "view", "controller", "fragment", "model", "util", "delegate", "service", "i18n", "css",
+    "view", "controller", "fragment", "model", "util", "delegate", "service", "i18n", "css", "test",
 ]);
 const PLURAL_FIX = {
     views: "view", controllers: "controller", fragments: "fragment",
@@ -510,6 +522,8 @@ export function checkUi5Naming(root, webappDir) {
                 }));
             }
         }
+
+        if (folder === "test") continue;
 
         if (MODULE_FOLDERS.has(folder) && name.endsWith(".ts") && !name.endsWith(".test.ts")) {
             const base = name.slice(0, -3);
@@ -586,13 +600,13 @@ const lowerFirst = (s) => s[0].toLowerCase() + s.slice(1);
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `node --test test/ui5-naming.test.mjs`
+Run: `node --test test/lib/checks/ui5-naming.test.mjs`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/lib/checks/ui5-naming.mjs test/ui5-naming.test.mjs test/fixtures/ui5-drift
+git add scripts/lib/checks/ui5-naming.mjs test/lib/checks/ui5-naming.test.mjs test/fixtures/ui5-drift
 git commit -m "feat: add UI5 naming and pairing checks"
 ```
 
@@ -603,7 +617,7 @@ git commit -m "feat: add UI5 naming and pairing checks"
 **Files:**
 - Create: `scripts/lib/checks/cap-naming.mjs`
 - Create: `test/fixtures/cap-drift/`
-- Test: `test/cap-naming.test.mjs`
+- Test: `test/lib/checks/cap-naming.test.mjs`
 
 **Interfaces:**
 - Consumes: `finding`, `rename`, `KEBAB`, `VIOLATION` from `finding.mjs`; `listFiles` from `walk.mjs`.
@@ -628,16 +642,16 @@ printf 'service C4C {}\n' > test/fixtures/cap-drift/srv/external/C4C.cds
 
 - [ ] **Step 2: Write the failing test**
 
-`test/cap-naming.test.mjs`:
+`test/lib/checks/cap-naming.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { checkCapNaming } from "../scripts/lib/checks/cap-naming.mjs";
+import { checkCapNaming } from "../../../scripts/lib/checks/cap-naming.mjs";
 
-const drift = fileURLToPath(new URL("fixtures/cap-drift", import.meta.url));
-const clean = fileURLToPath(new URL("fixtures/full-repo", import.meta.url));
+const drift = fileURLToPath(new URL("../../fixtures/cap-drift", import.meta.url));
+const clean = fileURLToPath(new URL("../../fixtures/full-repo", import.meta.url));
 const byId = (fs, id) => fs.filter((f) => f.id === id);
 
 test("camelCase module in srv is a violation with a kebab rename", () => {
@@ -666,8 +680,8 @@ test("a conforming CAP half produces no findings", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/cap-naming.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/checks/cap-naming.mjs'`.
+Run: `node --test test/lib/checks/cap-naming.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/cap-naming.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/checks/cap-naming.mjs`**
 
@@ -732,13 +746,13 @@ function toKebab(s) {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `node --test test/cap-naming.test.mjs`
+Run: `node --test test/lib/checks/cap-naming.test.mjs`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/lib/checks/cap-naming.mjs test/cap-naming.test.mjs test/fixtures/cap-drift
+git add scripts/lib/checks/cap-naming.mjs test/lib/checks/cap-naming.test.mjs test/fixtures/cap-drift
 git commit -m "feat: add CAP naming and handler pairing checks"
 ```
 
@@ -749,7 +763,7 @@ git commit -m "feat: add CAP naming and handler pairing checks"
 **Files:**
 - Create: `scripts/lib/checks/external-services.mjs`
 - Create: `test/fixtures/external-drift/`
-- Test: `test/external-services.test.mjs`
+- Test: `test/lib/checks/external-services.test.mjs`
 
 **Interfaces:**
 - Consumes: `finding`, `rename`, `PASCAL`, `VIOLATION` from `finding.mjs`; `listFiles` from `walk.mjs`.
@@ -791,16 +805,16 @@ SCREAMING_SNAKE service name, plus the `.xml` metadata extension.
 
 - [ ] **Step 2: Write the failing test**
 
-`test/external-services.test.mjs`:
+`test/lib/checks/external-services.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { checkExternalServices } from "../scripts/lib/checks/external-services.mjs";
+import { checkExternalServices } from "../../../scripts/lib/checks/external-services.mjs";
 
-const drift = fileURLToPath(new URL("fixtures/external-drift", import.meta.url));
-const clean = fileURLToPath(new URL("fixtures/full-repo", import.meta.url));
+const drift = fileURLToPath(new URL("../../fixtures/external-drift", import.meta.url));
+const clean = fileURLToPath(new URL("../../fixtures/full-repo", import.meta.url));
 const byId = (fs, id) => fs.filter((f) => f.id === id);
 
 test("a cds.requires key that disagrees with its model basename is a violation", () => {
@@ -838,8 +852,8 @@ test("a repo with no external services produces no findings", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/external-services.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/checks/external-services.mjs'`.
+Run: `node --test test/lib/checks/external-services.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/external-services.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/checks/external-services.mjs`**
 
@@ -919,13 +933,13 @@ function readRequires(root) {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `node --test test/external-services.test.mjs`
+Run: `node --test test/lib/checks/external-services.test.mjs`
 Expected: PASS, 5 tests.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/lib/checks/external-services.mjs test/external-services.test.mjs test/fixtures/external-drift
+git add scripts/lib/checks/external-services.mjs test/lib/checks/external-services.test.mjs test/fixtures/external-drift
 git commit -m "feat: add external service identity and metadata checks"
 ```
 
@@ -936,7 +950,7 @@ git commit -m "feat: add external service identity and metadata checks"
 **Files:**
 - Create: `scripts/lib/checks/ts-layout.mjs`
 - Create: `test/fixtures/ts-drift/`
-- Test: `test/ts-layout.test.mjs`
+- Test: `test/lib/checks/ts-layout.test.mjs`
 
 **Interfaces:**
 - Consumes: `finding`, `VIOLATION`, `WARNING` from `finding.mjs`; `listFiles` from `walk.mjs`.
@@ -945,7 +959,7 @@ git commit -m "feat: add external service identity and metadata checks"
 **Rules implemented:**
 
 6. Line count: `> 500` violation, `> 300` warning. `*.test.ts` exempt.
-7. Intra-file order: classify each top-level statement into a phase (1 import, 2 type, 3 constant, 4 exported API, 5 local helper) and report the first statement whose phase is lower than the highest phase already seen. Unclassifiable lines are ignored — this is deliberately conservative, per spec §11.
+7. Intra-file order: classify each top-level statement into a phase (1 import, 2 type, 3 constant, 4 exported API, 5 local helper) and report the first statement whose phase is lower than the highest phase already seen. Unclassifiable lines are ignored — this is deliberately conservative, per spec §12.
 8. A `type`, `interface` or top-level `const` name declared in two or more files is reported once, naming the nearest common folder and the file it belongs in.
 
 - [ ] **Step 1: Build the drift fixture**
@@ -965,15 +979,15 @@ node -e "require('fs').writeFileSync('test/fixtures/ts-drift/srv/pricing/huge.te
 
 - [ ] **Step 2: Write the failing test**
 
-`test/ts-layout.test.mjs`:
+`test/lib/checks/ts-layout.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { checkTsLayout } from "../scripts/lib/checks/ts-layout.mjs";
+import { checkTsLayout } from "../../../scripts/lib/checks/ts-layout.mjs";
 
-const drift = fileURLToPath(new URL("fixtures/ts-drift", import.meta.url));
+const drift = fileURLToPath(new URL("../../fixtures/ts-drift", import.meta.url));
 const run = () => checkTsLayout(drift, ["srv"]);
 const byId = (id) => run().filter((f) => f.id === id);
 
@@ -1006,8 +1020,8 @@ test("a name declared in two files belongs in a shared types file", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/ts-layout.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/checks/ts-layout.mjs'`.
+Run: `node --test test/lib/checks/ts-layout.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/ts-layout.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/checks/ts-layout.mjs`**
 
@@ -1131,24 +1145,24 @@ function commonFolder(files) {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `node --test test/ts-layout.test.mjs`
+Run: `node --test test/lib/checks/ts-layout.test.mjs`
 Expected: PASS, 4 tests.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/lib/checks/ts-layout.mjs test/ts-layout.test.mjs test/fixtures/ts-drift
+git add scripts/lib/checks/ts-layout.mjs test/lib/checks/ts-layout.test.mjs test/fixtures/ts-drift
 git commit -m "feat: add TypeScript size, ordering and shared-declaration checks"
 ```
 
 ---
 
-### Task 7: Approuter and MTA checks (spec §8, checks 10 and 11)
+### Task 7: Approuter and MTA checks (spec §9, checks 10 and 11)
 
 **Files:**
 - Create: `scripts/lib/checks/deployment.mjs`
 - Create: `test/fixtures/deploy-drift/`
-- Test: `test/deployment.test.mjs`
+- Test: `test/lib/checks/deployment.test.mjs`
 
 **Interfaces:**
 - Consumes: `finding`, `VIOLATION`, `QUESTION` from `finding.mjs`; `detectHalves` from `walk.mjs`.
@@ -1194,15 +1208,15 @@ YAML
 
 - [ ] **Step 2: Write the failing test**
 
-`test/deployment.test.mjs`:
+`test/lib/checks/deployment.test.mjs`:
 
 ```js
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { checkDeployment } from "../scripts/lib/checks/deployment.mjs";
+import { checkDeployment } from "../../../scripts/lib/checks/deployment.mjs";
 
-const drift = fileURLToPath(new URL("fixtures/deploy-drift", import.meta.url));
+const drift = fileURLToPath(new URL("../../fixtures/deploy-drift", import.meta.url));
 const byId = (id) => checkDeployment(drift).filter((f) => f.id === id);
 
 test("the catch-all route must be last", () => {
@@ -1241,8 +1255,8 @@ test("an app folder that disagrees with the MTA ID is a question", () => {
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `node --test test/deployment.test.mjs`
-Expected: FAIL — `Cannot find module '../scripts/lib/checks/deployment.mjs'`.
+Run: `node --test test/lib/checks/deployment.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/deployment.mjs'`.
 
 - [ ] **Step 4: Implement `scripts/lib/checks/deployment.mjs`**
 
@@ -1368,26 +1382,242 @@ function parseEntries(text) {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `node --test test/deployment.test.mjs`
+Run: `node --test test/lib/checks/deployment.test.mjs`
 Expected: PASS, 6 tests.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/lib/checks/deployment.mjs test/deployment.test.mjs test/fixtures/deploy-drift
+git add scripts/lib/checks/deployment.mjs test/lib/checks/deployment.test.mjs test/fixtures/deploy-drift
 git commit -m "feat: add approuter and MTA deployment checks"
 ```
 
 ---
 
-### Task 8: The audit orchestrator and CLI
+### Task 8: Testing convention checks (spec §8, checks 12, 13, 14)
+
+**Files:**
+- Create: `scripts/lib/checks/testing.mjs`
+- Create: `test/fixtures/testing-drift/`
+- Test: `test/lib/checks/testing.test.mjs`
+
+**Interfaces:**
+- Consumes: `finding`, `rename`, `PASCAL`, `VIOLATION`, `WARNING` from `finding.mjs`; `listFiles` from `walk.mjs`.
+- Produces: `checkTesting(root, webapps) -> Finding[]` where `webapps` is `halves.ui5`.
+
+**Rules implemented:**
+
+12. No `*.test.ts` under `srv/` or `db/`. The fix renames it into the mirrored
+    path under `test/`, dropping the leading `srv/` or `db/` segment.
+13. Under `webapp/test/`: immediate subfolders are only `unit` and
+    `integration`; `.ts` files directly in `webapp/test/` must be
+    `testsuite.qunit.ts`; modules under `unit/` end in `.qunit.ts`; basenames
+    under `integration/pages/` and `integration/journey/` are PascalCase.
+14. npm script names match `<area>:<action>` — lowercase segments separated by
+    colons. Reported as a `warning`, since renaming a script touches CI.
+
+- [ ] **Step 1: Build the drift fixture**
+
+```bash
+mkdir -p test/fixtures/testing-drift/srv/pos
+mkdir -p test/fixtures/testing-drift/webapp/test/{unit,integration/pages,legacy}
+printf 'export const x = 1;\n' > test/fixtures/testing-drift/srv/pos/pos-determination.ts
+: > test/fixtures/testing-drift/srv/pos/pos-determination.test.ts
+: > test/fixtures/testing-drift/webapp/test/testsuite.qunit.ts
+: > test/fixtures/testing-drift/webapp/test/unit/formatter.qunit.ts
+: > test/fixtures/testing-drift/webapp/test/unit/brokenName.ts
+: > test/fixtures/testing-drift/webapp/test/integration/pages/priceView.ts
+: > test/fixtures/testing-drift/webapp/test/legacy/old.qunit.ts
+cat > test/fixtures/testing-drift/package.json <<'JSON'
+{
+  "scripts": {
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "ts-typecheck": "tsc --noEmit",
+    "generate:entry-point": "dev-cap-tools gen-entrypoint",
+    "start:hybrid": "cds watch --profile hybrid"
+  }
+}
+JSON
+```
+
+- [ ] **Step 2: Write the failing test**
+
+`test/lib/checks/testing.test.mjs`:
+
+```js
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
+import { checkTesting } from "../../../scripts/lib/checks/testing.mjs";
+
+const drift = fileURLToPath(new URL("../../fixtures/testing-drift", import.meta.url));
+const run = () => checkTesting(drift, ["webapp"]);
+const byId = (id) => run().filter((f) => f.id === id);
+
+test("a test file under srv is relocated into the mirrored test tree", () => {
+    const hits = byId("test-location");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].file, "srv/pos/pos-determination.test.ts");
+    assert.equal(hits[0].severity, "violation");
+    assert.deepEqual(hits[0].fix, { kind: "rename", to: "test/pos/pos-determination.test.ts" });
+});
+
+test("only unit and integration are allowed under webapp/test", () => {
+    const hits = byId("ui5-test-tree");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].file, "webapp/test/legacy");
+});
+
+test("unit modules must carry the .qunit.ts suffix", () => {
+    const hits = byId("ui5-test-suffix");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].file, "webapp/test/unit/brokenName.ts");
+});
+
+test("page objects are PascalCase", () => {
+    const hits = byId("ui5-test-case");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].file, "webapp/test/integration/pages/priceView.ts");
+    assert.deepEqual(hits[0].fix, {
+        kind: "rename",
+        to: "webapp/test/integration/pages/PriceView.ts",
+    });
+});
+
+test("npm scripts must be <area>:<action>", () => {
+    const hits = byId("npm-script-name");
+    assert.equal(hits.length, 2);
+    assert.equal(hits[0].severity, "warning");
+    const named = hits.map((h) => h.message).join(" ");
+    assert.match(named, /ts-typecheck/);
+    assert.match(named, /generate:entry-point/);
+});
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+Run: `node --test test/lib/checks/testing.test.mjs`
+Expected: FAIL — `Cannot find module '../../../scripts/lib/checks/testing.mjs'`.
+
+- [ ] **Step 4: Implement `scripts/lib/checks/testing.mjs`**
+
+```js
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { listFiles } from "../walk.mjs";
+import { finding, rename, PASCAL, VIOLATION, WARNING } from "../finding.mjs";
+
+const NPM_SCRIPT = /^[a-z0-9]+(:[a-z0-9]+)*$/;
+const UI5_TEST_DIRS = new Set(["unit", "integration"]);
+const PASCAL_DIRS = ["integration/pages/", "integration/journey/"];
+
+export function checkTesting(root, webapps) {
+    return [...capTests(root), ...webapps.flatMap((w) => ui5Tests(root, w)), ...npmScripts(root)];
+}
+
+function capTests(root) {
+    const out = [];
+    for (const dir of ["srv", "db"]) {
+        for (const file of listFiles(root, dir).filter((f) => f.endsWith(".test.ts"))) {
+            out.push(finding({
+                check: 12, id: "test-location", severity: VIOLATION, file,
+                message: `tests live in a test/ tree mirroring ${dir}/, not beside the module`,
+                fix: rename(`test/${file.slice(dir.length + 1)}`),
+            }));
+        }
+    }
+    return out;
+}
+
+function ui5Tests(root, webappDir) {
+    const prefix = `${webappDir}/test/`;
+    const files = listFiles(root, `${webappDir}/test`).map((f) => f.slice(prefix.length));
+    const out = [];
+    const at = (p) => prefix + p;
+
+    for (const folder of new Set(files.filter((f) => f.includes("/")).map((f) => f.split("/")[0]))) {
+        if (UI5_TEST_DIRS.has(folder)) continue;
+        out.push(finding({
+            check: 13, id: "ui5-test-tree", severity: VIOLATION, file: at(folder).slice(0, -1),
+            message: `webapp/test/ holds only unit/ and integration/; found "${folder}"`,
+        }));
+    }
+
+    for (const file of files) {
+        if (!file.includes("/")) {
+            if (file.endsWith(".ts") && file !== "testsuite.qunit.ts") {
+                out.push(finding({
+                    check: 13, id: "ui5-test-suffix", severity: VIOLATION, file: at(file),
+                    message: `the only module directly in webapp/test/ is testsuite.qunit.ts`,
+                }));
+            }
+            continue;
+        }
+
+        if (file.startsWith("unit/") && file.endsWith(".ts") && !file.endsWith(".qunit.ts")) {
+            out.push(finding({
+                check: 13, id: "ui5-test-suffix", severity: VIOLATION, file: at(file),
+                message: `unit test modules end in .qunit.ts`,
+                fix: rename(at(`${file.slice(0, -3)}.qunit.ts`)),
+            }));
+        }
+
+        for (const dir of PASCAL_DIRS) {
+            if (!file.startsWith(dir) || !file.endsWith(".ts")) continue;
+            const name = file.slice(dir.length);
+            const base = name.split(".")[0];
+            if (!PASCAL.test(base)) {
+                out.push(finding({
+                    check: 13, id: "ui5-test-case", severity: VIOLATION, file: at(file),
+                    message: `${dir.slice(0, -1)} modules are PascalCase; "${base}" is not`,
+                    fix: rename(at(dir + base[0].toUpperCase() + base.slice(1) + name.slice(base.length))),
+                }));
+            }
+        }
+    }
+    return out;
+}
+
+function npmScripts(root) {
+    const file = "package.json";
+    if (!existsSync(join(root, file))) return [];
+    let scripts;
+    try {
+        scripts = JSON.parse(readFileSync(join(root, file), "utf8")).scripts ?? {};
+    } catch {
+        return [];
+    }
+    return Object.keys(scripts)
+        .filter((name) => !NPM_SCRIPT.test(name))
+        .map((name) => finding({
+            check: 14, id: "npm-script-name", severity: WARNING, file,
+            message: `npm scripts are <area>:<action> in lowercase; "${name}" is not`,
+        }));
+}
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `node --test test/lib/checks/testing.test.mjs`
+Expected: PASS, 5 tests.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add scripts/lib/checks/testing.mjs test/lib/checks/testing.test.mjs test/fixtures/testing-drift
+git commit -m "feat: add test placement, UI5 test tree and npm script checks"
+```
+
+---
+
+### Task 9: The audit orchestrator and CLI
 
 **Files:**
 - Create: `scripts/audit.mjs`
 - Test: `test/audit.test.mjs`
 
 **Interfaces:**
-- Consumes: every `check*` function from Tasks 3–7, `detectHalves` from `walk.mjs`.
+- Consumes: every `check*` function from Tasks 3–8, `detectHalves` from `walk.mjs`.
 - Produces: `audit(root) -> Report`, and a CLI `node scripts/audit.mjs [path]` printing the report as JSON to stdout.
 
 **Report shape — this is the contract the `conventions-audit` skill parses:**
@@ -1477,6 +1707,7 @@ import { checkCapNaming } from "./lib/checks/cap-naming.mjs";
 import { checkExternalServices } from "./lib/checks/external-services.mjs";
 import { checkTsLayout } from "./lib/checks/ts-layout.mjs";
 import { checkDeployment } from "./lib/checks/deployment.mjs";
+import { checkTesting } from "./lib/checks/testing.mjs";
 
 const SEVERITY_ORDER = { violation: 0, warning: 1, question: 2 };
 
@@ -1497,6 +1728,7 @@ export function audit(root) {
     if (halves.router) {
         findings.push(...checkDeployment(root));
     }
+    findings.push(...checkTesting(root, halves.ui5));
     if (scanned.length > 0) {
         findings.push(...checkTsLayout(root, scanned));
     }
@@ -1529,7 +1761,7 @@ Expected: PASS, 4 tests.
 - [ ] **Step 5: Run the whole suite**
 
 Run: `npm test`
-Expected: PASS, 30 tests across 7 files.
+Expected: PASS, all tests green across every file written so far.
 
 - [ ] **Step 6: Commit**
 
@@ -1540,7 +1772,7 @@ git commit -m "feat: add audit orchestrator and JSON CLI"
 
 ---
 
-### Task 9: Reference documents
+### Task 10: Reference documents
 
 **Files:**
 - Create: `references/naming-ui5.md`
@@ -1563,8 +1795,9 @@ section authorizes.
 | --- | --- | --- |
 | `references/naming-ui5.md` | §4 | the artifact table; the singular folder list; the `controller/` pairing rule; the class-like vs plain mechanical test (`export default class`); check ids `ui5-folder-name`, `ui5-artifact-case`, `ui5-module-case`, `ui5-i18n-name`, `ui5-controller-pairing` |
 | `references/naming-cap.md` | §5, §6 | the CAP artifact table; CDS identifier casing; the external three-way identity; the PascalCase alias rule with the `credentials.path` note; `.edmx`; check ids `cap-filename-case`, `cap-service-name`, `cap-handler-pairing`, `external-identity`, `external-name-style`, `external-metadata-ext` |
+| `references/testing.md` | §8 | the `srv/` -> `test/` mirroring rule; the `webapp/test/` tree; the explicit note that these govern placement and naming, never test existence; npm script naming; check ids `test-location`, `ui5-test-tree`, `ui5-test-suffix`, `ui5-test-case`, `npm-script-name` |
 | `references/typescript-layout.md` | §7 | 300/500 thresholds with tests exempt; the nearest-common-folder rule; no `types/` folder and no `.types.ts` suffix; the five-phase intra-file order; check ids `ts-file-size`, `ts-file-order`, `ts-shared-declaration` |
-| `references/approuter.md` | §8 | the `xs-app.json` rules; the `mta.yaml` derivation table; app-id alignment; the note that the `cors` block is present only for C4C-embedded apps; check ids `router-auth-method`, `router-auth-type`, `router-route-order`, `router-cache-control`, `mta-name-prefix`, `mta-app-id` |
+| `references/approuter.md` | §9 | the `xs-app.json` rules; the `mta.yaml` derivation table; app-id alignment; the note that the `cors` block is present only for C4C-embedded apps; check ids `router-auth-method`, `router-auth-type`, `router-route-order`, `router-cache-control`, `mta-name-prefix`, `mta-app-id` |
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1591,6 +1824,10 @@ const REQUIRED = {
     ],
     "references/typescript-layout.md": [
         "ts-file-size", "ts-file-order", "ts-shared-declaration", "300", "500",
+    ],
+    "references/testing.md": [
+        "test-location", "ui5-test-tree", "ui5-test-suffix", "ui5-test-case",
+        "npm-script-name", "webapp/test/",
     ],
     "references/approuter.md": [
         "router-auth-method", "router-auth-type", "router-route-order",
@@ -1648,7 +1885,7 @@ Rationale: the stock UI5 template ships `model/formatter.ts` and `model/models.t
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `node --test test/references.test.mjs`
-Expected: PASS, 5 tests.
+Expected: PASS, 6 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1659,7 +1896,7 @@ git commit -m "docs: add the four convention reference documents"
 
 ---
 
-### Task 10: The three skills
+### Task 11: The three skills
 
 **Files:**
 - Create: `skills/ui5-conventions/SKILL.md`
@@ -1681,15 +1918,15 @@ triggers.
 **`skills/ui5-conventions/SKILL.md`** — description must cover: writing or
 renaming files under `webapp/`, creating views, fragments, controllers,
 formatters, delegates or utils in a UI5 app. Body: point at
-`references/naming-ui5.md` and `references/typescript-layout.md`; state the
-delegation rule — for UI5 API guidance (controls, tables, MDC, accessibility,
+`references/naming-ui5.md`, `references/typescript-layout.md` and
+`references/testing.md`; state the delegation rule — for UI5 API guidance (controls, tables, MDC, accessibility,
 OPA5, QUnit) load `ui5:ui5-best-practices` and its siblings instead of guessing.
 
 **`skills/cap-conventions/SKILL.md`** — description must cover: writing or
 renaming files under `srv/` or `db/`, adding a CDS service, importing an
 external OData service, editing `cds.requires`. Body: point at
-`references/naming-cap.md`, `references/typescript-layout.md` and
-`references/approuter.md`. Include the `cds import` follow-up sequence, since
+`references/naming-cap.md`, `references/typescript-layout.md`,
+`references/testing.md` and `references/approuter.md`. Include the `cds import` follow-up sequence, since
 that is the step most likely to reintroduce drift: rename the generated file,
 rename the `service` inside it, rename the `cds.requires` key, update `model:`.
 
@@ -1779,11 +2016,11 @@ git commit -m "feat: add the three convention skills"
 
 ---
 
-### Task 11: Validate against the three real repositories
+### Task 12: Validate against the three real repositories
 
 **Files:**
 - Create: `test/fixtures/README.md`
-- Modify: `docs/2026-09-03-sap-conventions-design.md` (open items in §11 only)
+- Modify: `docs/2026-09-03-sap-conventions-design.md` (open items in §12 only)
 
 **Interfaces:**
 - Consumes: the finished `scripts/audit.mjs`.
@@ -1822,6 +2059,9 @@ and re-run before continuing.
 - `ui5-controller-pairing` on `controller/PosDetermination.ts` (pricing)
 - `ts-file-size` violations on exactly `srv/service.ts` (754), `srv/change-notification-service.ts` (636), `srv/determination-service.ts` (609)
 - `mta-app-id` on change_notification (`app/changenotifications` vs ID `change-notification`)
+- `test-location` on all 19 co-located `srv/**/*.test.ts` files in pricing, each with a `test/...` rename fix
+- `npm-script-name` on `ts-typecheck` (print), `generate:entry-point` (pricing) and `watch:priceView` (pricing)
+- no `ui5-test-tree` or `ui5-test-suffix` findings anywhere, since no repo has a `webapp/test/` folder yet
 
 - [ ] **Step 3: Triage every unexpected finding**
 
@@ -1831,15 +2071,15 @@ the check module, add a regression test to the matching `test/*.test.mjs`, and
 re-run. Do not silence a finding by adding a special case for a specific
 filename.
 
-Pay particular attention to `ts-file-order` — spec §11 flags it as the check
+Pay particular attention to `ts-file-order` — spec §12 flags it as the check
 most likely to be noisy. If it produces more than a handful of findings that a
 reader would not accept, narrow it to imports-only ordering (phase 1 versus
-everything else) and record that narrowing in §11.
+everything else) and record that narrowing in §12.
 
 - [ ] **Step 4: Record the calibration**
 
 Write `test/fixtures/README.md` naming each fixture, the real-world drift it
-reproduces, and which repository it came from. Update spec §11 to replace the
+reproduces, and which repository it came from. Update spec §12 to replace the
 two open items with what was actually decided about `ts-file-order` and the
 `approuter.md` coverage.
 
@@ -1864,22 +2104,23 @@ git commit -m "test: calibrate checks against the three calibration repositories
 | Spec section | Task |
 | --- | --- |
 | §3 Distribution | 1 |
-| §4 UI5 naming | 3 (checks), 9 (reference), 10 (skill) |
-| §5 CAP naming | 4, 9, 10 |
-| §6 External services | 5, 9, 10 |
-| §7 TypeScript layout | 6, 9 |
-| §8 Approuter and MTA | 7, 9, 10 |
-| §9.1 Deterministic checks 1–11 | 3, 4, 5, 6, 7 |
-| §9.2 Model-judged findings | 3 (`question` severity), 10 (skill renders them separately) |
-| §9.3 Fix pass | 10 (steps 5–7 of the audit skill) |
-| §11 Open items | 11 (resolved and recorded) |
+| §4 UI5 naming | 3 (checks), 10 (reference), 11 (skill) |
+| §5 CAP naming | 4, 10, 11 |
+| §6 External services | 5, 10, 11 |
+| §7 TypeScript layout | 6, 10 |
+| §8 Testing | 8, 10, 11 |
+| §9 Approuter and MTA | 7, 10, 11 |
+| §10.1 Deterministic checks 1–14 | 3, 4, 5, 6, 7, 8 |
+| §10.2 Model-judged findings | 3 (`question` severity), 11 (skill renders them separately) |
+| §10.3 Fix pass | 11 (steps 5–7 of the audit skill) |
+| §12 Open items | 12 (resolved and recorded) |
 
 **Type consistency:** every check module exports `check<Area>(root, ...)` and
 returns `Finding[]` built by `finding()`; `audit.mjs` consumes exactly those
 names. `rename(to)` is the only `fix` kind any check emits, and the audit
 skill's fix pass handles exactly that kind.
 
-**Deviation recorded:** spec §9.1 lists 11 checks; the plan implements all 11
+**Deviation recorded:** spec §10.1 lists 14 checks; the plan implements all 14
 but splits them across five modules by spec section rather than one module per
 check, so each file stays under the 300-line threshold the plugin enforces on
 its users.
