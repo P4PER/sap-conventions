@@ -11,10 +11,12 @@ const PLURAL_FIX = {
     models: "model", utils: "util", delegates: "delegate", services: "service",
 };
 const MODULE_FOLDERS = new Set(["model", "util", "delegate", "service"]);
-// delegate/ and service/ exist to hold class-like artifacts. UI5 loads them by module
-// path, and they are routinely exported by reference (`export default MyDelegate;`) or
-// as an object literal, so `export default class` alone is too narrow a test there.
-const CLASS_FOLDERS = new Set(["delegate", "service"]);
+// In delegate/ and service/ the role suffix decides, not the export shape: UI5 loads a
+// delegate or service by module path and they are routinely exported by reference
+// (`export default MyDelegate;`), while the supporting data modules that live beside them
+// (columnTypes.ts, itemsTableProperties.ts) are plain. Export shape is no signal at all —
+// model/formatter.ts has a default export and UserPreferencesService.ts does not.
+const ROLE_SUFFIX = { delegate: "Delegate", service: "Service" };
 const I18N_FILE = /^i18n(_[a-zA-Z]{2}(_[A-Za-z]{2})?)?\.properties$/;
 const DEFAULT_CLASS = /^export default class\s/m;
 
@@ -53,7 +55,8 @@ export function checkUi5Naming(root, webappDir) {
 
         if (MODULE_FOLDERS.has(folder) && name.endsWith(".ts") && !name.endsWith(".test.ts")) {
             const base = name.slice(0, -3);
-            const isClass = CLASS_FOLDERS.has(folder) ||
+            const suffix = ROLE_SUFFIX[folder];
+            const isClass = (suffix !== undefined && base.endsWith(suffix)) ||
                 DEFAULT_CLASS.test(readFileSync(join(root, webappDir, file), "utf8"));
             const ok = isClass ? PASCAL.test(base) : CAMEL.test(base);
             if (!ok) {
@@ -61,7 +64,7 @@ export function checkUi5Naming(root, webappDir) {
                 out.push(finding({
                     check: 1, id: "ui5-module-case", severity: VIOLATION, file: at(file),
                     message: isClass
-                        ? `${folder}/ holds class-like modules, which are PascalCase; "${base}" is not`
+                        ? `class-like modules are PascalCase; "${base}" is not`
                         : `plain module must be camelCase; "${base}" is not`,
                     fix: rename(at(`${folder}/${to}.ts`)),
                 }));

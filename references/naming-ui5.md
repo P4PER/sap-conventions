@@ -27,12 +27,28 @@ fragment/PosDeterminationDialog.fragment.xml
 
 ## Class-like modules are PascalCase, plain modules camelCase   `ui5-module-case`
 
-A module is **class-like** if its default export is a class — the audit tests
-for `export default class` at the start of a line. Everything else is **plain**.
+A module is **class-like** if either:
+
+- its basename ends in the **role suffix** of its folder — `Delegate` in
+  `delegate/`, `Service` in `service/`; or
+- it default-exports a class (`export default class` at the start of a line).
+
+Everything else is **plain**.
+
+The role suffix is what carries the signal in `delegate/` and `service/`: UI5
+loads a delegate or a service by module path, and they are routinely exported by
+reference (`export default PriceViewTableDelegate;`) rather than as a class.
+Meanwhile the supporting-data modules that live beside them are plain.
+
+Export shape alone is no signal — `model/formatter.ts` has a default export and
+is correctly camelCase, while `service/UserPreferencesService.ts` has none and is
+correctly PascalCase.
 
 ```
-delegate/ItemsTableDelegate.ts        class-like  -> PascalCase
-service/UserPreferencesService.ts     class-like  -> PascalCase
+delegate/ItemsTableDelegate.ts        role suffix -> PascalCase
+service/UserPreferencesService.ts     role suffix -> PascalCase
+delegate/columnTypes.ts               supporting data, no suffix -> camelCase
+delegate/itemsTableProperties.ts      supporting data, no suffix -> camelCase
 model/formatter.ts                    plain       -> camelCase
 util/userPreferences.ts               plain       -> camelCase
 util/i18n.ts                          plain       -> camelCase

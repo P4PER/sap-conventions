@@ -89,8 +89,15 @@ misplaced. The `.controller.ts` suffix stays meaningful as "extends
 not carry it.
 
 **Class-like vs plain, decided mechanically.** A module is class-like if its
-default export is a class (`export default class ...`); otherwise it is plain.
-The audit reads the export, so check 1 needs no judgement.
+basename ends in the role suffix of its folder (`Delegate` in `delegate/`,
+`Service` in `service/`) or it default-exports a class (`export default class`).
+Otherwise it is plain. Check 1 needs no judgement.
+
+Export shape alone does not work, and calibration proved it: `model/formatter.ts`
+has a default export and is correctly camelCase, while
+`service/UserPreferencesService.ts` has none and is correctly PascalCase. The
+role suffix is what separates a delegate from the supporting-data modules
+(`columnTypes.ts`, `itemsTableProperties.ts`) that sit beside it.
 
 Rationale for camelCase on plain modules: the stock UI5 template ships
 `model/formatter.ts` and `model/models.ts`. The folder tells you which rule
@@ -413,11 +420,13 @@ needed.
    yields a trailing empty element). The three size violations were reported as
    755/637/610 against a true 754/636/609.
 2. `delegate/` and `service/` modules were flagged as needing camelCase. The
-   `export default class` test is too narrow there: UI5 loads these by module
-   path and they are routinely exported by reference
-   (`export default PriceViewTableDelegate;`) or as an object literal. Those two
-   folders now count as class-like by convention, with regression tests both
-   ways.
+   `export default class` test is too narrow there. The first fix — treating
+   both folders as wholly class-like — over-corrected, flagging the plain
+   supporting-data modules beside them (`columnTypes.ts`,
+   `itemsTableProperties.ts`). The rule that survives contact with the real code
+   is the **role suffix** (§4). After it, `ui5-module-case` reports exactly
+   `util/Formatter.ts` and `util/I18n.ts` in pricing and print, and nothing in
+   change_notification — the three genuine drifts and no others.
 
 **One finding left as a genuine question rather than a rule change:**
 `app/print/webapp/data/` is not in the allowed folder set. Whether `data/` joins

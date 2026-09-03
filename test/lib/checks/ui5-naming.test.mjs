@@ -51,3 +51,9 @@ test("a camelCase delegate is flagged even though it exports no class", () => {
         to: "webapp/delegate/BrokenDelegate.ts",
     });
 });
+
+test("a supporting-data module beside a delegate stays camelCase", () => {
+    const hits = checkUi5Naming(drift, "webapp")
+        .filter((f) => f.file === "webapp/delegate/columnTypes.ts");
+    assert.deepEqual(hits, []);
+});
