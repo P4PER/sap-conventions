@@ -11,7 +11,7 @@ breath.
 ## 1. Run the checker
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/audit.mjs <path-to-repo>
+node "${CLAUDE_PLUGIN_ROOT}/scripts/audit.mjs" <path-to-repo>
 ```
 
 It prints JSON and always exits 0. It never writes to the repo.

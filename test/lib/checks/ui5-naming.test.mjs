@@ -57,3 +57,17 @@ test("a supporting-data module beside a delegate stays camelCase", () => {
         .filter((f) => f.file === "webapp/delegate/columnTypes.ts");
     assert.deepEqual(hits, []);
 });
+
+test("a .d.ts declaration file is not a module to be cased", () => {
+    const hits = checkUi5Naming(drift, "webapp").filter((f) => f.file.endsWith(".d.ts"));
+    assert.deepEqual(hits, []);
+});
+
+test("a nested module is judged by its basename and renamed in its own folder", () => {
+    const hits = byId(checkUi5Naming(drift, "webapp"), "ui5-module-case")
+        .filter((f) => f.file.startsWith("webapp/model/"));
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].file, "webapp/model/sub/Formatter.ts");
+    assert.match(hits[0].message, /"Formatter"/);
+    assert.deepEqual(hits[0].fix, { kind: "rename", to: "webapp/model/sub/formatter.ts" });
+});

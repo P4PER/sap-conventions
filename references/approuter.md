@@ -5,7 +5,8 @@
 ### The file parses   `router-parse`
 
 If `xs-app.json` is not valid JSON, that is the only finding reported for it —
-no route rule can be evaluated until it parses.
+no route rule can be evaluated until it parses. A `routes` key that is present
+but not an array is reported the same way, and the route rules below are skipped.
 
 ### `authenticationMethod` is `"route"`   `router-auth-method`
 

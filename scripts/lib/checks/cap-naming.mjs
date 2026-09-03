@@ -5,6 +5,9 @@ import { finding, rename, KEBAB, VIOLATION } from "../finding.mjs";
 
 const SERVICE_NAME = /^[a-z0-9]+(-[a-z0-9]+)*-service$/;
 const DECLARES_SERVICE = /^\s*service\s+\w+/m;
+// Only hand-written source is named by us. Data (db/data/<entity>.csv), docs and
+// anything else under srv/ and db/ carry names the platform or the author owns.
+const SOURCE_EXT = /\.(cds|ts|js|json|edmx|xml)$/;
 
 export function checkCapNaming(root) {
     const files = [...listFiles(root, "srv"), ...listFiles(root, "db")]
@@ -14,6 +17,7 @@ export function checkCapNaming(root) {
 
     for (const file of files) {
         const name = file.slice(file.lastIndexOf("/") + 1);
+        if (!SOURCE_EXT.test(name)) continue;
         const base = stripExt(name);
         if (!KEBAB.test(base)) {
             out.push(finding({
@@ -44,7 +48,7 @@ export function checkCapNaming(root) {
 }
 
 function stripExt(name) {
-    const base = name.replace(/\.(cds|ts|js|json|edmx|xml)$/, "");
+    const base = name.replace(SOURCE_EXT, "");
     return base.endsWith(".test") ? base.slice(0, -5) : base;
 }
 

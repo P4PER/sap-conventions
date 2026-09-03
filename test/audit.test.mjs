@@ -1,12 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { audit } from "../scripts/audit.mjs";
 
 const clean = fileURLToPath(new URL("fixtures/full-repo", import.meta.url));
 const ui5Drift = fileURLToPath(new URL("fixtures/ui5-drift", import.meta.url));
 const cli = fileURLToPath(new URL("../scripts/audit.mjs", import.meta.url));
+const scripts = fileURLToPath(new URL("../scripts", import.meta.url));
 
 test("a conforming repo reports no findings", () => {
     const report = audit(clean);
@@ -36,4 +40,17 @@ test("the CLI prints parseable JSON and exits 0", () => {
     const report = JSON.parse(out);
     assert.equal(report.root, ui5Drift);
     assert.ok(Array.isArray(report.findings));
+});
+
+test("the CLI still runs from a path that needs URL escaping", () => {
+    const dir = mkdtempSync(join(tmpdir(), "sap conventions "));
+    try {
+        cpSync(scripts, join(dir, "scripts"), { recursive: true });
+        const out = execFileSync("node", [join(dir, "scripts", "audit.mjs"), ui5Drift], {
+            encoding: "utf8",
+        });
+        assert.ok(JSON.parse(out).findings.length > 0);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
 });

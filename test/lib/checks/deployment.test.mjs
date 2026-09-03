@@ -38,3 +38,26 @@ test("an app folder that disagrees with the MTA ID is a question", () => {
     assert.equal(hits[0].severity, "question");
     assert.match(hits[0].message, /changenotifications/);
 });
+
+test("a name inside requires: is a reference, not a declaration", () => {
+    assert.ok(!byId("mta-name-prefix").some((f) => f.message.includes("destination_service")));
+});
+
+test("a key after a requires: block still belongs to its own module", () => {
+    assert.match(byId("mta-app-id")[0].message, /app\/changenotifications/);
+});
+
+test("an MTA is checked even when the repo has no approuter", () => {
+    const mtaOnly = fileURLToPath(new URL("../../fixtures/mta-only", import.meta.url));
+    const hits = checkDeployment(mtaOnly).filter((f) => f.id === "mta-name-prefix");
+    assert.equal(hits.length, 1);
+    assert.match(hits[0].message, /legacy-deployer/);
+});
+
+test("a routes key that is not an array is reported, not thrown", () => {
+    const broken = fileURLToPath(new URL("../../fixtures/router-broken", import.meta.url));
+    const hits = checkDeployment(broken);
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].id, "router-parse");
+    assert.match(hits[0].message, /must be an array/);
+});

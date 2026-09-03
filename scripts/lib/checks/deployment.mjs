@@ -25,7 +25,15 @@ function router(root) {
     }
 
     const out = [];
-    const routes = config.routes ?? [];
+    const declared = config.routes ?? [];
+    const routes = Array.isArray(declared) ? declared : [];
+
+    if (!Array.isArray(declared)) {
+        out.push(finding({
+            check: 10, id: "router-parse", severity: VIOLATION, file,
+            message: `"routes" must be an array; no route rule can be evaluated until it is`,
+        }));
+    }
 
     if (config.authenticationMethod !== "route") {
         out.push(finding({
@@ -98,19 +106,44 @@ function mta(root) {
     return out;
 }
 
+// Reads the modules: and resources: lists without a YAML dependency. Indentation
+// is what separates a declaration from a reference: a deeper "- name:" belongs to
+// a requires:/provides: block and names something declared elsewhere, and only keys
+// at the entry's own indent belong to the entry.
 function parseEntries(text) {
     const entries = [];
-    for (const line of text.split("\n")) {
-        const name = /^\s*-\s*name:\s*(\S+)/.exec(line);
-        if (name) {
-            entries.push({ name: name[1], type: null, path: null });
+    let inSection = false;
+    let itemIndent = null;
+    let keyIndent = null;
+    let current = null;
+
+    for (const raw of text.split("\n")) {
+        const trimmed = raw.trimStart();
+        if (trimmed === "" || trimmed.startsWith("#")) continue;
+
+        if (/^[^\s-]/.test(raw)) {
+            inSection = /^(modules|resources):/.test(raw);
+            itemIndent = null;
+            current = null;
             continue;
         }
-        const current = entries[entries.length - 1];
-        if (!current) continue;
-        const type = /^\s*type:\s*(\S+)/.exec(line);
+        if (!inSection) continue;
+
+        const indent = raw.length - trimmed.length;
+        const item = /^-\s*name:\s*(\S+)/.exec(trimmed);
+        if (item) {
+            if (itemIndent === null) itemIndent = indent;
+            if (indent > itemIndent) continue;
+            keyIndent = raw.indexOf("name:");
+            current = { name: item[1], type: null, path: null };
+            entries.push(current);
+            continue;
+        }
+        if (!current || indent !== keyIndent) continue;
+
+        const type = /^type:\s*(\S+)/.exec(trimmed);
         if (type) current.type = type[1];
-        const path = /^\s*path:\s*(\S+)/.exec(line);
+        const path = /^path:\s*(\S+)/.exec(trimmed);
         if (path) current.path = path[1];
     }
     return entries;

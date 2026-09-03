@@ -38,9 +38,14 @@ export function checkUi5Naming(root, webappDir) {
     }
 
     for (const file of files) {
-        const [folder, name] = split(file);
-        if (!name) continue;
+        const cut = file.lastIndexOf("/");
+        if (cut === -1) continue;
+        const folder = file.slice(0, file.indexOf("/"));
         if (folder === "test") continue;
+        // A nested file is named by its own basename and renamed inside its own
+        // directory; only the top folder decides which rule applies.
+        const dir = file.slice(0, cut + 1);
+        const name = file.slice(cut + 1);
 
         if ((folder === "view" && name.endsWith(".view.xml")) ||
             (folder === "fragment" && name.endsWith(".fragment.xml"))) {
@@ -53,8 +58,10 @@ export function checkUi5Naming(root, webappDir) {
             }
         }
 
-        if (MODULE_FOLDERS.has(folder) && name.endsWith(".ts") && !name.endsWith(".test.ts")) {
+        if (MODULE_FOLDERS.has(folder) && name.endsWith(".ts") &&
+            !name.endsWith(".test.ts") && !name.endsWith(".d.ts")) {
             const base = name.slice(0, -3);
+            if (!base) continue;
             const suffix = ROLE_SUFFIX[folder];
             const isClass = (suffix !== undefined && base.endsWith(suffix)) ||
                 DEFAULT_CLASS.test(readFileSync(join(root, webappDir, file), "utf8"));
@@ -66,7 +73,7 @@ export function checkUi5Naming(root, webappDir) {
                     message: isClass
                         ? `class-like modules are PascalCase; "${base}" is not`
                         : `plain module must be camelCase; "${base}" is not`,
-                    fix: rename(at(`${folder}/${to}.ts`)),
+                    fix: rename(at(`${dir}${to}.ts`)),
                 }));
             }
         }
@@ -117,11 +124,6 @@ function basenames(files, folder, suffix) {
     return new Set(files
         .filter((f) => f.startsWith(`${folder}/`) && f.endsWith(suffix))
         .map((f) => f.slice(folder.length + 1, -suffix.length)));
-}
-
-function split(file) {
-    const i = file.indexOf("/");
-    return i === -1 ? [null, null] : [file.slice(0, i), file.slice(i + 1)];
 }
 
 const upperFirst = (s) => s[0].toUpperCase() + s.slice(1);

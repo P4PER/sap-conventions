@@ -12,17 +12,24 @@ export function checkTesting(root, webapps) {
 }
 
 function capTests(root) {
-    const out = [];
+    const moves = [];
     for (const dir of ["srv", "db"]) {
         for (const file of listFiles(root, dir).filter((f) => f.endsWith(".test.ts"))) {
-            out.push(finding({
-                check: 12, id: "test-location", severity: VIOLATION, file,
-                message: `tests live in a test/ tree mirroring ${dir}/, not beside the module`,
-                fix: rename(`test/${file.slice(dir.length + 1)}`),
-            }));
+            moves.push({ file, dir, to: `test/${file.slice(dir.length + 1)}` });
         }
     }
-    return out;
+    // Dropping the leading segment maps srv/pos/x.test.ts and db/pos/x.test.ts onto
+    // one target. The rule stands; the rename does not, because the audit moves each
+    // finding on its own and the second move would overwrite the first.
+    const claims = new Map();
+    for (const move of moves) claims.set(move.to, (claims.get(move.to) ?? 0) + 1);
+
+    return moves.map(({ file, dir, to }) => finding({
+        check: 12, id: "test-location", severity: VIOLATION, file,
+        message: `tests live in a test/ tree mirroring ${dir}/, not beside the module` +
+            (claims.get(to) > 1 ? `; ${to} is claimed by another test too, so pick a target` : ""),
+        fix: claims.get(to) > 1 ? null : rename(to),
+    }));
 }
 
 function ui5Tests(root, webappDir) {
@@ -60,15 +67,15 @@ function ui5Tests(root, webappDir) {
 
         for (const dir of PASCAL_DIRS) {
             if (!file.startsWith(dir) || !file.endsWith(".ts")) continue;
-            const name = file.slice(dir.length);
+            const cut = file.lastIndexOf("/") + 1;
+            const name = file.slice(cut);
             const base = name.split(".")[0];
-            if (!PASCAL.test(base)) {
-                out.push(finding({
-                    check: 13, id: "ui5-test-case", severity: VIOLATION, file: at(file),
-                    message: `${dir.slice(0, -1)} modules are PascalCase; "${base}" is not`,
-                    fix: rename(at(dir + base[0].toUpperCase() + base.slice(1) + name.slice(base.length))),
-                }));
-            }
+            if (!base || PASCAL.test(base)) continue;
+            out.push(finding({
+                check: 13, id: "ui5-test-case", severity: VIOLATION, file: at(file),
+                message: `${dir.slice(0, -1)} modules are PascalCase; "${base}" is not`,
+                fix: rename(at(file.slice(0, cut) + upperFirst(base) + name.slice(base.length))),
+            }));
         }
     }
     return out;
@@ -90,3 +97,5 @@ function npmScripts(root) {
             message: `npm scripts are <area>:<action> in lowercase; "${name}" is not`,
         }));
 }
+
+const upperFirst = (s) => s[0].toUpperCase() + s.slice(1);

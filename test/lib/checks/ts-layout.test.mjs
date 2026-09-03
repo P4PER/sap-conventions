@@ -20,9 +20,18 @@ test("test files are exempt from the size rule", () => {
 });
 
 test("a constant after an exported function is out of order", () => {
-    const hits = byId("ts-file-order");
+    const hits = byId("ts-file-order").filter((f) => f.file.endsWith("out-of-order.ts"));
     assert.equal(hits.length, 1);
-    assert.equal(hits[0].file, "srv/pricing/out-of-order.ts");
+    assert.equal(hits[0].line, 3);
+});
+
+test("an exported arrow function is API, not a constant", () => {
+    assert.ok(!byId("ts-file-order").some((f) => f.file.endsWith("arrow-exports.ts")));
+});
+
+test("trailing whitespace does not hide a statement from the order check", () => {
+    const hits = byId("ts-file-order").filter((f) => f.file.endsWith("trailing-space.ts"));
+    assert.equal(hits.length, 1);
     assert.equal(hits[0].line, 3);
 });
 

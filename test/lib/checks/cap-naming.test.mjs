@@ -29,3 +29,8 @@ test("srv/external is exempt from kebab-case", () => {
 test("a conforming CAP half produces no findings", () => {
     assert.deepEqual(checkCapNaming(clean), []);
 });
+
+test("data and docs under srv/ and db/ are not renamed by the kebab rule", () => {
+    const hits = byId(checkCapNaming(drift), "cap-filename-case");
+    assert.ok(!hits.some((f) => f.file.endsWith(".csv") || f.file.endsWith(".md")));
+});

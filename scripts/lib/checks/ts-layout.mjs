@@ -10,7 +10,9 @@ const SHARED_FILES = new Set(["types.ts", "constants.ts"]);
 const PHASES = [
     [1, /^import\s/],
     [2, /^(export\s+)?(interface|type)\s+\w/],
-    [3, /^(export\s+)?const\s+\w+\s*(:[^=]+)?=\s*(?!\()/],
+    // A const holding a function is phase-4 API, not a phase-3 literal, in every
+    // shape it can take: (a) =>, async, function, x =>, <T>(x) =>.
+    [3, /^(export\s+)?const\s+\w+\s*(:[^=]+)?=(?!\s*(?:\(|<|async\b|function\b|[A-Za-z_$][\w$]*\s*=>))/],
     [4, /^export\s+(default\s+|async\s+)?(function|class|const)\s/],
     [5, /^(async\s+)?function\s+\w/],
 ];
@@ -76,8 +78,8 @@ function order(file, lines) {
 }
 
 function classify(raw) {
+    if (/^\s/.test(raw)) return null;
     const line = raw.trimEnd();
-    if (line !== raw.trimStart()) return null;
     for (const [phase, re] of PHASES) if (re.test(line)) return phase;
     return null;
 }

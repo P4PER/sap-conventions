@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { detectHalves } from "./lib/walk.mjs";
 import { checkUi5Naming } from "./lib/checks/ui5-naming.mjs";
 import { checkCapNaming } from "./lib/checks/cap-naming.mjs";
@@ -24,9 +26,9 @@ export function audit(root) {
         findings.push(...checkExternalServices(root));
         scanned.push("srv", "db");
     }
-    if (halves.router) {
-        findings.push(...checkDeployment(root));
-    }
+    // Both halves of this check guard on their own file: an MTA without an
+    // approuter still gets its module names read.
+    findings.push(...checkDeployment(root));
     findings.push(...checkTesting(root, halves.ui5));
     if (scanned.length > 0) {
         findings.push(...checkTsLayout(root, scanned));
@@ -46,7 +48,11 @@ function summarize(findings) {
     return summary;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Compare real paths, not strings: argv[1] needs URL escaping before it can be
+// matched against import.meta.url, and it reaches us unresolved through symlinked
+// directories such as /tmp and /var on macOS.
+if (process.argv[1] &&
+    realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
     const root = resolve(process.argv[2] ?? ".");
     process.stdout.write(JSON.stringify(audit(root), null, 2) + "\n");
 }
