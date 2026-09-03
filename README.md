@@ -13,6 +13,12 @@ Structure is this plugin's concern. UI5 API-level guidance is delegated to the
 /plugin install sap-conventions
 ```
 
+To work on the plugin locally instead, point the marketplace at your clone:
+
+```
+/plugin marketplace add ./sap-conventions
+```
+
 ## Skills
 
 | Skill | Loads when |

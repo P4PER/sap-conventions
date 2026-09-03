@@ -24,7 +24,7 @@ export function checkTsLayout(root, dirs) {
     const declaredIn = new Map();
 
     for (const file of files) {
-        const lines = readFileSync(join(root, file), "utf8").split("\n");
+        const lines = readLines(join(root, file));
         if (!file.endsWith(".test.ts")) {
             out.push(...size(file, lines.length));
             out.push(...order(file, lines));
@@ -34,6 +34,12 @@ export function checkTsLayout(root, dirs) {
 
     out.push(...shared(declaredIn));
     return out;
+}
+
+function readLines(path) {
+    const lines = readFileSync(path, "utf8").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    return lines;
 }
 
 function size(file, count) {

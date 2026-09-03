@@ -16,7 +16,8 @@ test("plural fragments folder is a violation with a rename fix", () => {
 });
 
 test("plain module in util must be camelCase", () => {
-    const hits = byId(checkUi5Naming(drift, "webapp"), "ui5-module-case");
+    const hits = byId(checkUi5Naming(drift, "webapp"), "ui5-module-case")
+        .filter((f) => f.file.startsWith("webapp/util/"));
     assert.equal(hits.length, 1);
     assert.equal(hits[0].file, "webapp/util/I18n.ts");
     assert.deepEqual(hits[0].fix, { kind: "rename", to: "webapp/util/i18n.ts" });
@@ -32,4 +33,21 @@ test("controller module without a view or fragment partner is a question", () =>
 
 test("a conforming webapp produces no findings", () => {
     assert.deepEqual(checkUi5Naming(clean, "app/priceview/webapp"), []);
+});
+
+test("a delegate exported by reference is still class-like, so PascalCase passes", () => {
+    const hits = checkUi5Naming(drift, "webapp")
+        .filter((f) => f.file.endsWith("PriceViewTableDelegate.ts"));
+    assert.deepEqual(hits, []);
+});
+
+test("a camelCase delegate is flagged even though it exports no class", () => {
+    const hits = byId(checkUi5Naming(drift, "webapp"), "ui5-module-case")
+        .filter((f) => f.file === "webapp/delegate/brokenDelegate.ts");
+    assert.equal(hits.length, 1);
+    assert.match(hits[0].message, /class-like/);
+    assert.deepEqual(hits[0].fix, {
+        kind: "rename",
+        to: "webapp/delegate/BrokenDelegate.ts",
+    });
 });

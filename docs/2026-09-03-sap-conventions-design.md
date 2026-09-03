@@ -392,5 +392,34 @@ reviewable in isolation.
 
 - `references/approuter.md` is the thinnest section; §9 is derived from three
   repos only. Expect to revise once the plugin meets a fourth project.
-- Whether `audit.mjs` check 7 (intra-file order) can be done reliably with
-  regex or needs a TS AST parse. Prefer regex first; escalate only if noisy.
+
+## 13. Calibration outcome
+
+Recorded after running the finished checker against all three repositories.
+
+**Check 7 (intra-file order) was kept as specified — regex, no AST.** It
+produced 21 findings across the three repos (17 in pricing, 4 in
+change_notification). Five were inspected line by line and all were true
+positives: `export interface MdcPropertyInfo` at `columnTypes.ts:88`,
+`type Ctor<T>` at `PriceViewTableDelegate.ts:108`, `export const
+OR_FILTER_CHUNK` at `c4c/client.ts:61`, and two interfaces declared mid-file in
+`srv/pos/`. They are warnings, not violations, and the conservative
+classifier reported no false positives. The narrowing §12 authorised was not
+needed.
+
+**Two checker bugs were found and fixed during calibration:**
+
+1. Line counts were one high on any file ending in a newline (`split("\n")`
+   yields a trailing empty element). The three size violations were reported as
+   755/637/610 against a true 754/636/609.
+2. `delegate/` and `service/` modules were flagged as needing camelCase. The
+   `export default class` test is too narrow there: UI5 loads these by module
+   path and they are routinely exported by reference
+   (`export default PriceViewTableDelegate;`) or as an object literal. Those two
+   folders now count as class-like by convention, with regression tests both
+   ways.
+
+**One finding left as a genuine question rather than a rule change:**
+`app/print/webapp/data/` is not in the allowed folder set. Whether `data/` joins
+the set or its three modules move into `model/` is a decision for the first
+person to touch that app.
