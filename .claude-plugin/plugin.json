@@ -1,6 +1,6 @@
 {
   "name": "sap-conventions",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Consistent file naming, folder layout and module organization for UI5 and CAP/CDS projects, with an audit command that reports and repairs drift.",
   "author": {
     "name": "Timon Wegener"

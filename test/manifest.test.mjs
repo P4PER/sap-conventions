@@ -27,3 +27,9 @@ test("package.json has no dependencies", () => {
     assert.deepEqual(p.dependencies ?? {}, {});
     assert.deepEqual(p.devDependencies ?? {}, {});
 });
+
+test("plugin.json and package.json declare the same version", () => {
+    const plugin = read(".claude-plugin/plugin.json");
+    const pkg = read("package.json");
+    assert.equal(plugin.version, pkg.version);
+});
