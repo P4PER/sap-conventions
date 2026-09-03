@@ -1,0 +1,12 @@
+{
+  "cds": {
+    "requires": {
+      "C4C": { "kind": "odata-v2", "model": "srv/external/C4C" },
+      "CPI_Pricing": { "kind": "rest", "model": "srv/external/CpiPricing" },
+      "ZAPI_SALES_ORDER_SIMULATION_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/ZAPI_SALES_ORDER_SIMULATION_SRV"
+      }
+    }
+  }
+}
