@@ -1,0 +1,14 @@
+ID: priceview
+modules:
+  - name: priceview-srv
+    type: nodejs
+    path: gen/srv
+  - name: priceview
+    type: approuter.nodejs
+    path: app/router
+  - name: priceview-ui
+    type: html5
+    path: app/priceview
+resources:
+  - name: priceview-auth
+    type: org.cloudfoundry.managed-service

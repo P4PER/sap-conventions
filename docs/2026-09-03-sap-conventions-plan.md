@@ -248,6 +248,14 @@ echo '{}' > test/fixtures/full-repo/app/router/xs-app.json
 echo '{}' > test/fixtures/full-repo/package.json
 ```
 
+**`full-repo` is the "clean" fixture every later task asserts produces zero
+findings, so its config files must be genuinely conforming, not placeholders.**
+Task 2 only needs `xs-app.json` to exist for `detectHalves`, but Task 7 and
+Task 8 read its contents. Write a conforming `app/router/xs-app.json` (§9),
+`mta.yaml` with `ID: priceview` and `priceview-*` module names, and a
+`package.json` whose scripts are `<area>:<action>`, at this point rather than
+discovering it as a failure in Task 9.
+
 - [ ] **Step 2: Write the failing test**
 
 `test/lib/walk.test.mjs`:
