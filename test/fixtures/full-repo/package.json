@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "ts:typecheck": "tsc --noEmit"
+  }
+}

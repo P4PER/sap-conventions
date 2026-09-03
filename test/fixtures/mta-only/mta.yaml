@@ -1,0 +1,7 @@
+ID: change-notification
+modules:
+  - name: change-notification-srv
+    type: nodejs
+    path: gen/srv
+  - name: legacy-deployer
+    type: com.sap.application.content

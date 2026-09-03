@@ -1,0 +1,19 @@
+ID: change-notification
+modules:
+  - name: change-notification-srv
+    type: nodejs
+    requires:
+      - name: destination_service
+      - name: change-notification-auth
+  - name: srv-api
+    type: nodejs
+  - name: change-notification-ui
+    type: html5
+    requires:
+      - name: srv-api
+    path: app/changenotifications
+  - name: legacy-deployer
+    type: com.sap.application.content
+resources:
+  - name: change-notification-auth
+    type: org.cloudfoundry.managed-service
