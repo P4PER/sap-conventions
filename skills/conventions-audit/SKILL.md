@@ -38,7 +38,9 @@ group — a reader wants "9 files are mis-cased", not nine paragraphs.
 
 Report **questions separately and last**. These need human judgement and are
 never auto-fixed: a module in `controller/` with no partner, an app folder that
-disagrees with the MTA ID, an oversized file whose seams are a design call.
+disagrees with the MTA ID, an oversized file whose seams are a design call, two
+functions with the same shape but different constants
+(`ts-parameterizable-function`).
 
 Cite the rule by its check id. `references/` documents every id, and the
 matching section explains why the rule exists.
@@ -71,6 +73,18 @@ Then, per group:
 3. Search the repo for the old basename and confirm nothing still points at it.
 4. Run the project's own tests if it has any.
 5. Commit, naming the check id in the message.
+
+## Findings with no rename
+
+`ts-duplicate-function` and `ts-parameterizable-function` arrive without a
+`fix`. There is nothing to `git mv` — the repair is to write a shared function
+and change the call sites, which is a code change the user has to want.
+
+Report them, name the sites and the folder the shared version belongs in, and
+stop there. If the user asks for the extraction, do it as its own commit,
+separate from any rename group: move the body into the named folder, replace
+each site with a call, run the project's tests, and confirm nothing else still
+holds a copy.
 
 ## Renames that need more than a rename
 

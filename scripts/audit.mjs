@@ -9,6 +9,7 @@ import { checkExternalServices } from "./lib/checks/external-services.mjs";
 import { checkTsLayout } from "./lib/checks/ts-layout.mjs";
 import { checkDeployment } from "./lib/checks/deployment.mjs";
 import { checkTesting } from "./lib/checks/testing.mjs";
+import { checkDuplication } from "./lib/checks/duplication.mjs";
 
 const SEVERITY_ORDER = { violation: 0, warning: 1, question: 2 };
 
@@ -32,6 +33,7 @@ export function audit(root) {
     findings.push(...checkTesting(root, halves.ui5));
     if (scanned.length > 0) {
         findings.push(...checkTsLayout(root, scanned));
+        findings.push(...checkDuplication(root, scanned));
     }
 
     findings.sort((a, b) =>

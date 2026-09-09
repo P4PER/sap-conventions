@@ -50,6 +50,7 @@ Single source of truth, read by all three skills:
 - [`references/naming-ui5.md`](references/naming-ui5.md)
 - [`references/naming-cap.md`](references/naming-cap.md)
 - [`references/typescript-layout.md`](references/typescript-layout.md)
+- [`references/duplication.md`](references/duplication.md)
 - [`references/testing.md`](references/testing.md)
 - [`references/approuter.md`](references/approuter.md)
 

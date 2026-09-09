@@ -23,6 +23,9 @@ const REQUIRED = {
         "test-location", "ui5-test-tree", "ui5-test-suffix", "ui5-test-case",
         "npm-script-name", "webapp/test/",
     ],
+    "references/duplication.md": [
+        "ts-duplicate-function", "ts-parameterizable-function", "5 lines",
+    ],
     "references/approuter.md": [
         "router-auth-method", "router-auth-type", "router-route-order",
         "router-cache-control", "mta-name-prefix", "mta-app-id",

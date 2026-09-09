@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { listFiles } from "../walk.mjs";
+import { listFiles, commonFolder } from "../walk.mjs";
 import { finding, VIOLATION, WARNING } from "../finding.mjs";
 
 const WARN_LINES = 300;
@@ -111,13 +111,3 @@ function shared(declaredIn) {
     return out;
 }
 
-function commonFolder(files) {
-    const parts = files.map((f) => f.split("/").slice(0, -1));
-    const shared = [];
-    for (let i = 0; i < parts[0].length; i++) {
-        const seg = parts[0][i];
-        if (parts.every((p) => p[i] === seg)) shared.push(seg);
-        else break;
-    }
-    return shared.join("/") || ".";
-}
