@@ -4,7 +4,12 @@ import { listFiles, commonFolder } from "../walk.mjs";
 import { extractFunctions } from "../functions.mjs";
 import { finding, WARNING, QUESTION } from "../finding.mjs";
 
-const MIN_BODY_LINES = 5;
+// Two lines is the floor: a one-line accessor repeated across files is not
+// copy-paste, but a two-line helper carried from one app into the next is.
+const MIN_BODY_LINES = 2;
+// Constructors are excluded outright. Assigning the injected dependencies is
+// the same two lines in every service, and there is nothing to extract.
+const EXCLUDED_NAMES = new Set(["constructor"]);
 const MAX_LITERALS_SHOWN = 3;
 const STRING = /"[^"]*"|'[^']*'|`[^`]*`/g;
 const NUMBER = /\b\d+(?:\.\d+)?\b/g;
@@ -33,6 +38,7 @@ function collect(root, dirs) {
     for (const file of files) {
         const text = readFileSync(join(root, file), "utf8");
         for (const fn of extractFunctions(text)) {
+            if (EXCLUDED_NAMES.has(fn.name)) continue;
             const exact = normalize(fn.stripped);
             if (exact.length < MIN_BODY_LINES) continue;
             bodies.push({

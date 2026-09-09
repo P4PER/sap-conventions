@@ -29,8 +29,20 @@ test("the same body twice in one file is reported", () => {
     assert.match(hit.message, /twice\.ts:15/);
 });
 
-test("bodies under five lines are ignored", () => {
+test("one-line bodies are ignored", () => {
     assert.ok(!run().some((f) => f.message.includes("small.ts")));
+});
+
+test("a two-line body copied into another file is reported", () => {
+    const hit = byId("ts-duplicate-function").find((f) => f.message.includes("label.ts"));
+    assert.ok(hit, "expected the formatCode copy to be reported");
+    assert.match(hit.message, /srv\/pos\/receipt\.ts:1/);
+    assert.match(hit.message, /srv\/pricing\/label\.ts:1/);
+});
+
+test("identical constructors are not reported", () => {
+    assert.ok(!run().some((f) => f.message.includes("register.ts")));
+    assert.ok(!run().some((f) => f.message.includes("engine.ts")));
 });
 
 test("copies inside test files are ignored", () => {

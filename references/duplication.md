@@ -4,8 +4,13 @@ Applies to every `.ts` file in `srv/`, `db/` and `webapp/`. `.d.ts` and
 `.test.ts` files are exempt — parallel arrange blocks in tests read better
 than a shared helper.
 
-Function bodies shorter than 5 lines are never reported. One-line accessors
-and `return this.x;` pairs are not duplication worth a finding.
+Function bodies shorter than 2 lines are never reported: a one-line accessor
+repeated across files is not copy-paste, it is the only way to write the line.
+A two-line helper carried from one app into the next is, and short helpers are
+where copy-paste actually collects — a coercion, a null-guard, a formatter.
+
+A `constructor` is exempt at any length. Assigning the injected dependencies
+is the same two lines in every service and there is nothing to extract.
 
 ## An identical body in two places   `ts-duplicate-function`
 
@@ -44,3 +49,10 @@ ones — the audit reports the candidate and leaves the decision to a person.
 
 Groups are reported with one site per distinct body, so a pair already listed
 under `ts-duplicate-function` never appears here twice.
+
+Both tiers depend on the function-body scanner reading a signature correctly.
+A brace inside a parameter list — a destructured argument, an inline object
+type, a generic return type — does not open a body, and neither does an
+options object handed to a call by an expression-bodied arrow. A brace right
+after `=>` does: an arrow that wraps its whole expression in a call keeps its
+real code in that callback.
