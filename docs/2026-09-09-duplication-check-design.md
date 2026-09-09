@@ -66,6 +66,20 @@ normalizing identifiers too would start matching unrelated short accessors.
 keeps one-line getters and `return this.x;` pairs out of the report, and it
 matters most on the literal-masked tier.
 
+> **Revised 2026-09-09, shipped in 1.3.0.** Both claims above turned out to be
+> wrong, measured over four TypeScript repos (1,113 files). Sweeping the
+> threshold from 8 down to 2 showed the exact tier is the threshold-sensitive
+> one, not the masked tier — it roughly triples between five lines and two,
+> while the masked tier grows by about half. And the 2–4 line band holds
+> almost no `return this.x;` pairs; it holds coercions, null-guards and
+> formatters copied between sibling modules, which is exactly the finding this
+> check exists to produce. What the five-line floor was really suppressing was
+> a parser bug: a brace anywhere in a signature was read as the start of a
+> body, and parameter lists — which mostly run two to four lines — collided
+> with each other across files. With that fixed (see `openingBrace` in
+> `functions.mjs`), the floor drops to two, and the only genuine noise left,
+> constructors assigning their injected dependencies, is excluded by name.
+
 ## Findings
 
 Bodies are grouped by key. Each group produces one finding listing every site

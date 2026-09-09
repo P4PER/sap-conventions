@@ -7,6 +7,11 @@ const KEYWORDS = new Set([
     "function", "class", "new", "typeof", "await", "yield", "try", "finally",
 ]);
 
+// How far below a signature line the body brace may sit before the match is
+// abandoned, and how far a still-open parameter list may be followed.
+const GRACE_LINES = 3;
+const MAX_SIGNATURE_LINES = 30;
+
 const STARTS = [
     // function foo(   /   export default async function* foo(
     /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)?\s*[(<]/,
@@ -97,15 +102,46 @@ function declares(line) {
 }
 
 // The brace may sit on the signature line or just below it, but a ";" first
-// means this was an expression-bodied arrow, not a block.
+// means this was an expression-bodied arrow, not a block. Braces inside the
+// parameter list -- a destructured argument, an inline object type, an options
+// object handed to a call -- are not the body, so a "{" only counts when it
+// sits outside every bracket, and the search follows a parameter list that
+// runs past the grace window rather than giving up inside it. The exception is
+// a "{" after "=>": an arrow whose expression is a wrapper call keeps its real
+// code in that callback, so that block is the body worth reading.
 function openingBrace(text, starts, line) {
     const from = starts[line];
-    const to = starts[Math.min(line + 3, starts.length - 1)] ?? text.length;
-    const slice = text.slice(from, to);
-    const brace = slice.indexOf("{");
-    const semi = slice.indexOf(";");
-    if (brace === -1 || (semi !== -1 && semi < brace)) return -1;
-    return from + brace;
+    const graceEnd = starts[Math.min(line + GRACE_LINES, starts.length - 1)] ?? text.length;
+    const hardEnd = starts[Math.min(line + MAX_SIGNATURE_LINES, starts.length - 1)] ?? text.length;
+    let depth = 0;
+    let angle = 0;
+
+    for (let i = from; i < hardEnd; i++) {
+        const c = text[i];
+        if (c === "{" && (depth > 0 || angle > 0) && followsArrow(text, i)) return i;
+        if (c === "(" || c === "[") {
+            depth++;
+        } else if (c === ")" || c === "]") {
+            depth--;
+        } else if (c === "<" && depth === 0) {
+            angle++;
+        } else if (c === ">" && angle > 0) {
+            angle--;
+        } else if (depth === 0 && angle === 0) {
+            if (c === "{") return i;
+            if (c === ";") return -1;
+            // Past the grace window the signature has to still be open to be
+            // worth following; otherwise the "{" belongs to a later statement.
+            if (c === "\n" && i >= graceEnd) return -1;
+        }
+    }
+    return -1;
+}
+
+function followsArrow(text, brace) {
+    let i = brace - 1;
+    while (i >= 0 && /\s/.test(text[i])) i--;
+    return text[i] === ">" && text[i - 1] === "=";
 }
 
 function matchBrace(text, open) {
