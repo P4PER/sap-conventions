@@ -24,7 +24,7 @@ const REQUIRED = {
         "npm-script-name", "webapp/test/",
     ],
     "references/duplication.md": [
-        "ts-duplicate-function", "5 lines",
+        "ts-duplicate-function", "ts-parameterizable-function", "5 lines",
     ],
     "references/approuter.md": [
         "router-auth-method", "router-auth-type", "router-route-order",

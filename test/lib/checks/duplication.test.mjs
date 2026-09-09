@@ -40,3 +40,26 @@ test("copies inside test files are ignored", () => {
 test("no finding carries a rename fix", () => {
     assert.ok(run().every((f) => f.fix === null));
 });
+
+test("bodies differing only in constants are a question, not a warning", () => {
+    const hits = byId("ts-parameterizable-function");
+    assert.equal(hits.length, 1);
+    assert.equal(hits[0].severity, "question");
+    assert.equal(hits[0].check, 16);
+    assert.match(hits[0].message, /discountEur at srv\/pricing\/eur\.ts:1/);
+    assert.match(hits[0].message, /discountUsd at srv\/pricing\/usd\.ts:1/);
+});
+
+test("the question names the constants that differ", () => {
+    const [hit] = byId("ts-parameterizable-function");
+    assert.match(hit.message, /0\.15 vs 0\.25/);
+    assert.match(hit.message, /5000 vs 8000/);
+    assert.match(hit.message, /parameters/);
+});
+
+test("a pair reported as an exact copy is not reported again as a shape", () => {
+    assert.ok(!byId("ts-parameterizable-function").some((f) =>
+        f.message.includes("ticket.ts")));
+    assert.ok(!byId("ts-parameterizable-function").some((f) =>
+        f.message.includes("twice.ts")));
+});
