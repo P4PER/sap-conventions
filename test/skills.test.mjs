@@ -31,3 +31,9 @@ test("the audit skill invokes the checker via CLAUDE_PLUGIN_ROOT", () => {
     assert.match(text, /git status --porcelain/);
     assert.match(text, /git mv/);
 });
+
+test("the audit skill explains findings that have no rename fix", () => {
+    const text = readFileSync(root + "skills/conventions-audit/SKILL.md", "utf8");
+    assert.match(text, /ts-duplicate-function/);
+    assert.match(text, /ts-parameterizable-function/);
+});
