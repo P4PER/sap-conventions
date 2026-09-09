@@ -56,6 +56,22 @@ Single source of truth, read by all three skills:
 
 Design and plan: [`docs/`](docs/)
 
+## The skill reminder
+
+The plugin ships a `UserPromptSubmit` hook (`hooks/hooks.json`). On every
+message, in a UI5 or CAP project only, it injects a short reminder naming the
+three skills and what each one covers.
+
+It exists because a skill is only used if the model remembers to look for one,
+and the instruction to look arrives once per session — at `SessionStart` — then
+competes with everything after it. `UserPromptSubmit` fires every turn instead.
+
+Whether a directory counts as a UI5 or CAP project is the same test the audit
+uses: a `webapp/` tree, or a `srv/` or `db/` directory. Everywhere else the hook
+prints nothing, so it costs nothing.
+
+To see it, disable it, or check that it ran, use `/hooks`.
+
 ## Development
 
 ```bash
