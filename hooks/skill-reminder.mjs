@@ -3,8 +3,20 @@
 // only inside a UI5 or CAP project. Every failure path exits 0 with no output --
 // a hook that throws on a user's prompt is worse than one that stays quiet.
 import { readFileSync, realpathSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { detectHalves } from "../scripts/lib/walk.mjs";
+
+// Imported through a guarded dynamic import rather than a static one: a static
+// import is evaluated before any try/catch below it, so a half-installed plugin
+// would put a stack trace on every prompt in every project -- including the
+// non-SAP ones this hook exists to leave alone. Left undefined, the calls below
+// throw inside reminderFor's try and the hook simply says nothing.
+let detectHalves, listFiles;
+try {
+    ({ detectHalves, listFiles } = await import("../scripts/lib/walk.mjs"));
+} catch {
+    // A broken install. Silence is the only safe answer.
+}
 
 const REMINDER = [
     "This is a UI5/CAP project. Before acting, check whether a",
@@ -18,19 +30,38 @@ const REMINDER = [
 ].join("\n");
 
 export function reminderFor(root) {
-    let halves;
     try {
-        halves = detectHalves(root);
+        if (!isSapProject(root)) return null;
     } catch {
         return null;
     }
-    if (halves.ui5.length === 0 && !halves.cap) return null;
     return JSON.stringify({
         hookSpecificOutput: {
             hookEventName: "UserPromptSubmit",
             additionalContext: REMINDER,
         },
     });
+}
+
+// The audit's cap test is a bare existsSync on srv/ or db/. That is fine for a
+// command someone points at a repo they already know is CAP, but this hook fires
+// on every prompt everywhere, and a top-level db/ is common well outside SAP --
+// Rails, migrations, anything. So the UI5 half is taken as-is and the CAP half
+// has to be corroborated before the hook speaks up.
+function isSapProject(root) {
+    const halves = detectHalves(root);
+    if (halves.ui5.length > 0) return true;
+    return halves.cap && hasCdsSignal(root);
+}
+
+function hasCdsSignal(root) {
+    try {
+        if (readFileSync(join(root, "package.json"), "utf8").includes("@sap/cds")) return true;
+    } catch {
+        // No package.json, or unreadable. The directories still get a look.
+    }
+    return ["srv", "db"].some((dir) =>
+        listFiles(root, dir).some((file) => file.endsWith(".cds")));
 }
 
 function payloadCwd() {

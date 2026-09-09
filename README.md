@@ -66,8 +66,11 @@ It exists because a skill is only used if the model remembers to look for one,
 and the instruction to look arrives once per session — at `SessionStart` — then
 competes with everything after it. `UserPromptSubmit` fires every turn instead.
 
-Whether a directory counts as a UI5 or CAP project is the same test the audit
-uses: a `webapp/` tree, or a `srv/` or `db/` directory. Everywhere else the hook
+A `webapp/` tree makes it a UI5 project, the same test the audit uses. The CAP
+half is deliberately stricter than the audit's: a `srv/` or `db/` directory
+*and* a `.cds` file inside one of them, or `@sap/cds` in `package.json`. The
+audit only ever runs on a repo you point it at, but this fires on every prompt,
+and a top-level `db/` is common well outside SAP. Everywhere else the hook
 prints nothing, so it costs nothing.
 
 To see it, disable it, or check that it ran, use `/hooks`.

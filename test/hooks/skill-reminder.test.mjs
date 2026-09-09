@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,4 +67,61 @@ test("malformed stdin still reminds inside an SAP project", () => {
 
 test("a cwd that does not exist exits 0 without output", () => {
     assert.equal(run(JSON.stringify({ cwd: "/no/such/place/at/all" }), tmpdir()), "");
+});
+
+test("a bare db/ directory is not enough to call it a CAP project", () => {
+    const dir = mkdtempSync(join(tmpdir(), "railsish-"));
+    try {
+        mkdirSync(join(dir, "db", "migrate"), { recursive: true });
+        assert.equal(reminderFor(dir), null);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test("a .cds file under srv/ corroborates the CAP half", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cap-"));
+    try {
+        mkdirSync(join(dir, "srv"));
+        writeFileSync(join(dir, "srv", "service.cds"), "service S {}\n");
+        assert.ok(reminderFor(dir), "expected a reminder for a real CAP project");
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test("a package.json depending on @sap/cds corroborates it too", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cap-pkg-"));
+    try {
+        mkdirSync(join(dir, "srv"));
+        writeFileSync(join(dir, "package.json"),
+            JSON.stringify({ dependencies: { "@sap/cds": "^8" } }));
+        assert.ok(reminderFor(dir), "a CAP project need not have .cds files yet");
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test("a webapp/ tree needs no corroboration", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ui5-"));
+    try {
+        mkdirSync(join(dir, "webapp"));
+        assert.ok(reminderFor(dir), "UI5 is detected by the webapp tree alone");
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test("a broken install stays silent instead of throwing on every prompt", () => {
+    const dir = mkdtempSync(join(tmpdir(), "broken-"));
+    try {
+        // No scripts/lib/walk.mjs beside it: the import cannot resolve.
+        const orphan = join(dir, "skill-reminder.mjs");
+        copyFileSync(hook, orphan);
+        assert.equal(
+            execFileSync("node", [orphan], { input: "{}", cwd: capRepo, encoding: "utf8" }),
+            "");
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
 });
