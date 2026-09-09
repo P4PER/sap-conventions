@@ -37,3 +37,9 @@ test("the audit skill explains findings that have no rename fix", () => {
     assert.match(text, /ts-duplicate-function/);
     assert.match(text, /ts-parameterizable-function/);
 });
+
+test("the audit skill does not treat every duplicate as worth extracting", () => {
+    const text = readFileSync(root + "skills/conventions-audit/SKILL.md", "utf8");
+    assert.match(text, /two lines up/);
+    assert.match(text, /worth extracting/);
+});

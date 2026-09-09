@@ -80,6 +80,12 @@ Then, per group:
 `fix`. There is nothing to `git mv` — the repair is to write a shared function
 and change the call sites, which is a code change the user has to want.
 
+Bodies count from two lines up, so these are not all equally actionable. A
+short helper carried from one app into the next is worth extracting; two
+handlers that happen to share two lines inside one controller usually are not,
+and a shared import can cost more than the copy. Say which is which rather
+than handing over every finding as a repair waiting to happen.
+
 Report them, name the sites and the folder the shared version belongs in, and
 stop there. If the user asks for the extraction, do it as its own commit,
 separate from any rename group: move the body into the named folder, replace
