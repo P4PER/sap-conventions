@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { detectHalves, listFiles } from "../../scripts/lib/walk.mjs";
+import { detectHalves, listFiles, commonFolder } from "../../scripts/lib/walk.mjs";
 import { PASCAL, CAMEL, KEBAB } from "../../scripts/lib/finding.mjs";
 
 const fixture = fileURLToPath(new URL("../fixtures/full-repo", import.meta.url));
@@ -35,4 +35,11 @@ test("casing regexes accept and reject the right names", () => {
     assert.ok(KEBAB.test("pos-determination"));
     assert.ok(!KEBAB.test("posDetermination"));
     assert.ok(!KEBAB.test("cbo_odata"));
+});
+
+test("commonFolder returns the longest shared directory", () => {
+    assert.equal(commonFolder(["srv/pricing/a.ts", "srv/pricing/b.ts"]), "srv/pricing");
+    assert.equal(commonFolder(["srv/pricing/a.ts", "srv/pos/b.ts"]), "srv");
+    assert.equal(commonFolder(["srv/a.ts", "app/b.ts"]), ".");
+    assert.equal(commonFolder(["srv/pricing/a.ts"]), "srv/pricing");
 });

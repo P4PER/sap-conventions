@@ -47,3 +47,14 @@ function findWebapps(root) {
     }
     return found.sort();
 }
+
+export function commonFolder(files) {
+    const parts = files.map((f) => f.split("/").slice(0, -1));
+    const shared = [];
+    for (let i = 0; i < parts[0].length; i++) {
+        const seg = parts[0][i];
+        if (parts.every((p) => p[i] === seg)) shared.push(seg);
+        else break;
+    }
+    return shared.join("/") || ".";
+}
